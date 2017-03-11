@@ -8,15 +8,20 @@
 #include "ppport.h"
 #include <stdio.h>
 
+struct elem {
+    const char *key;
+    STRLEN keysz;
+    void *val;
+};
+
 static int cmp_asc(const void *a, const void *b) {
-    const char *ia = *(const char **)a;
-    const char *ib = *(const char **)b;
-    return strcmp(ia, ib);
+    const struct elem *ia = a, *ib = b;
+    return memcmp(ia->key, ib->key, MIN(ia->keysz, ib->keysz));
 }
+
 static int cmp_desc(const void *a, const void *b) {
-    const char *ia = *(const char **)a;
-    const char *ib = *(const char **)b;
-    return -strcmp(ia, ib);
+    const struct elem *ia = a, *ib = b;
+    return -memcmp(ia->key, ib->key, MIN(ia->keysz, ib->keysz));
 }
 
 MODULE = Sort::HashKeys		PACKAGE = Sort::HashKeys
@@ -30,7 +35,7 @@ sort(...)
         reverse_sort = 1
     INIT:
         int i;
-        void **elems;
+        struct elem *elems;
     CODE:
         if (!items) {
             XSRETURN_UNDEF;
@@ -40,17 +45,17 @@ sort(...)
             items++;
         }
 
-        Newx(elems, items, void*);
-        for (i = 0; i < items; i+=2) {
-            elems[i+0] = SvPV_nolen(ST(i));
-            elems[i+1] = ST(i+1);
+        Newx(elems, items / 2, struct elem);
+        for (i = 0; i < items / 2; i++) {
+            elems[i].key = SvPV(ST(2*i), elems[i].keysz);
+            elems[i].val = ST(2*i+1);
         }
 
-        qsort(elems, items / 2, 2 * sizeof(void*), ix ? cmp_desc : cmp_asc);
+        qsort(elems, items / 2, sizeof (struct elem), ix ? cmp_desc : cmp_asc);
 
-        for (i = 0; i < items; i+=2) {
-            ST(i+0) = newSVpv(elems[i], 0);
-            ST(i+1) = elems[i+1];
+        for (i = 0; i < items / 2; i++) {
+            ST(2*i+0) = newSVpv(elems[i].key, elems[i].keysz);
+            ST(2*i+1) = elems[i].val;
         }
 
         Safefree(elems);

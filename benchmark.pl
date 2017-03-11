@@ -17,7 +17,7 @@ for (1..1000) {
 %hash1 = %hash;
 %hash2 = %hash;
 
-cmpthese(-60, {
+cmpthese(-10, {
         xs_sort    => sub { @xs   = Sort::HashKeys::sort(%hash1) },
         perl_sort  => sub { @perl = map { ($_, $hash2{$_}) } sort keys %hash2 },
 });
