@@ -47,12 +47,10 @@ Sort::HashKeys - Get a sorted-by-key list from a hash
 See L<benchmark.pl|https://github.com/athreef/Sort-HashKeys/blob/master/benchmark.pl> in this distribution. Test was run on a Haswell 2.6 GHz i5 CPU (4278U) for a minute each on a copy of a randomly generated hash of 1000 keys. Keys were alphanumeric with length between 1 and 6 and values of integers between 1 and 1000.
 
                                          Rate
-    map {($_,$h{$_})} sort keys %h     1830/s        --      -27%
-    Sort::HashKeys::sort(%h)           2503/s       37%        --
+    map {($_,$h{$_})} sort keys %h     1836/s        --      -27%
+    Sort::HashKeys::sort(%h)           2525/s       38%        --
 
 37% faster.
-
-One could do better by operating in-place, instead of copying off the pointers, but I'll leave that for another time. (or leave it to you! Send me your patch!)
 
 =head1 METHODS AND ARGUMENTS
 
