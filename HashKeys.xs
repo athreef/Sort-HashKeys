@@ -18,7 +18,7 @@
 #if defined(MULTIPLICITY)
     #if defined(__linux__)
         #define pCMP(my_perl, a, b) (a, b, my_perl)
-        #define aCMP pCMP
+        #define aCMP
         #define sort(base, nel, elemsz, data, cmpfn) qsort_r(base, nel, elemsz, cmpfn, data)
 
     #elif defined __unix__ || (defined __APPLE__ && defined __MACH__)
