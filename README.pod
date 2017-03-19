@@ -36,11 +36,16 @@ Sort::HashKeys - Get a sorted-by-key list from a hash
 
 See L<benchmark.pl|https://github.com/athreef/Sort-HashKeys/blob/master/benchmark.pl> in this distribution. Test was run on a Haswell 2.6 GHz i5 CPU (4278U) for a minute each on a copy of a randomly generated hash of 1000 keys. Keys were alphanumeric with length between 1 and 6 and values of integers between 1 and 1000.
 
-                                         Rate
-    map {($_,$h{$_})} sort keys %h     1836/s        --      -27%
-    Sort::HashKeys::sort(%h)           2525/s       38%        --
+    # perl-5.24.0 w/ BSD libc
+                                             Rate
+    map {($_,$h{$_})} sort keys %h           1589/s       --      -28%     -32%     -33%
+    S::HK::sort(%h) w/ qsort (threaded)      2199/s       38%      --       -6%      -7%
+    S::HK::sort(%h) w/ qsort_r (threaded)    2338/s       47%       6%      --       -2%
+    S::HK::sort(%h) w/ qsort (non-threaded)  2375/s       49%       8%       2%      --
 
-37% faster.
+49% faster on non-threaded Perl and up to 47% faster on threaded Perl.
+
+The Slowdown with C<qsort> on threaded build is because the interpreter state is fetched from thread local storage on every comparison. On GNU and BSD systems, this is avoided by using non-standard C<qsort_r>, which allows passing an extra parameter to the comparison function.
 
 =head1 METHODS AND ARGUMENTS
 
@@ -49,9 +54,11 @@ See L<benchmark.pl|https://github.com/athreef/Sort-HashKeys/blob/master/benchmar
 =item sort(@)
 
 Sorts a hash-like list C<< (key1 => val1, key2 => val2>) >> by means of your libc's 
-L<strcmp|http://en.cppreference.com/w/c/string/byte/strcmp> in ascending order. If an odd number of elements was passed in, an C<undef> is appended.
+L<qsort|http://en.cppreference.com/w/c/algorithm/qsort> in ascending order according to Perl's internal C<sv_cmp> function. 
 
-Providing a custom comparison function is not yet supported.
+Unlike Perl's built-in L<sort>. C<qsort(3)> is not required to be a stable sort and providing a custom comparison function is not yet supported.
+
+Lists with odd number of elements are padded by an C<undef>.
 
 =item reverse_sort(@)
 

@@ -23,7 +23,7 @@ cmpthese(-10, {
 });
 
 @perl == @xs or die "Functions didn't return the same output";
-for (0..$#perl-1) {
+for (0..$#perl) {
     $perl[$_] eq $xs[$_] or die "Functions didn't return the same output";
 }
 

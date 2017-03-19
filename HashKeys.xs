@@ -1,4 +1,6 @@
 #define PERL_NO_GET_CONTEXT
+#define _BSD_SOURCE
+#define _GNU_SOURCE
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
@@ -8,14 +10,45 @@
 #include "ppport.h"
 #include <stdio.h>
 
-static int cmp_asc(const void *a, const void *b) {
-    dTHX;
-    return +sv_cmp(*(SV**)a, *(SV**)b);
+/* We want to use qsort_r to avoid having to do fetch state from TLS on every compare
+ * Unfortunately, qsort_r isn't standard, and the order of arguments differ between
+ * glibc and BSD libc, so we need some preprocessor magic to handle the three cases
+ */
+
+#if defined(MULTIPLICITY)
+    #if defined(__linux__)
+        #define pCMP(my_perl, a, b) (a, b, my_perl)
+        #define aCMP pCMP
+        #define sort(base, nel, elemsz, data, cmpfn) qsort_r(base, nel, elemsz, cmpfn, data)
+
+    #elif defined __unix__ || (defined __APPLE__ && defined __MACH__)
+        #include <sys/param.h>
+        #if defined BSD
+            #define pCMP
+            #define aCMP
+            #define sort qsort_r
+        #endif
+    #endif
+
+    #ifndef sort /* Meh. We'll do a TLS access on every compare then.. */
+            #define pCMP(my_perl, a, b) (a, b)
+            #define aCMP(my_perl, a, b) (PERL_GET_THX, a, b)
+            #define sort(base, nel, elemsz, data, cmpfn) qsort(base, nel, elemsz, cmpfn)
+
+    #endif
+#else
+    #define pCMP(my_perl, a, b) (a, b)
+    #define aCMP(my_perl, a, b) (a, b)
+    #define sort(base, nel, elemsz, data, cmpfn) qsort(base, nel, elemsz, cmpfn)
+
+#endif
+
+static int cmp_asc pCMP(pTHX, const void *a, const void *b) {
+    return +Perl_sv_cmp aCMP(aTHX, *(SV**)a, *(SV**)b);
 }
 
-static int cmp_desc(const void *a, const void *b) {
-    dTHX;
-    return -sv_cmp(*(SV**)a, *(SV**)b);
+static int cmp_desc pCMP(pTHX, const void *a, const void *b) {
+    return -Perl_sv_cmp aCMP(aTHX, *(SV**)a, *(SV**)b);
 }
 
 MODULE = Sort::HashKeys		PACKAGE = Sort::HashKeys
@@ -39,7 +72,6 @@ sort(...)
             items++;
         }
 
-        /*PL_stack_base[ax + (off)]*/
-        qsort(&PL_stack_base[ax], items / 2, 2*sizeof (void*), ix ? cmp_desc : cmp_asc);
+        sort(&PL_stack_base[ax], items / 2, 2*sizeof (SV*), aTHX, ix ? cmp_desc : cmp_asc);
 
         XSRETURN(items);
