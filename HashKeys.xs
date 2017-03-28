@@ -15,19 +15,16 @@
  * glibc and BSD libc, so we need some preprocessor magic to handle the three cases
  */
 
-#if defined(MULTIPLICITY)
-    #if defined(__linux__)
+#ifdef MULTIPLICITY
+    #ifdef __linux__
         #define pCMP(my_perl, a, b) (a, b, my_perl)
         #define aCMP
         #define sort(base, nel, elemsz, data, cmpfn) qsort_r(base, nel, elemsz, cmpfn, data)
 
-    #elif defined __unix__ || (defined __APPLE__ && defined __MACH__)
-        #include <sys/param.h>
-        #if defined BSD
+    #elif defined __FreeBSD__ || (defined __APPLE__ && defined __MACH__)
             #define pCMP
             #define aCMP
             #define sort qsort_r
-        #endif
     #endif
 
     #ifndef sort /* Meh. We'll do a TLS access on every compare then.. */
