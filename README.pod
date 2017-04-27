@@ -38,14 +38,18 @@ See L<benchmark.pl|https://github.com/athreef/Sort-HashKeys/blob/master/benchmar
 
     # perl-5.24.0 w/ BSD libc
                                              Rate
-    map {($_,$h{$_})} sort keys %h           1589/s       --      -28%     -32%     -33%
-    S::HK::sort(%h) w/ qsort (threaded)      2199/s       38%      --       -6%      -7%
-    S::HK::sort(%h) w/ qsort_r (threaded)    2338/s       47%       6%      --       -2%
-    S::HK::sort(%h) w/ qsort (non-threaded)  2375/s       49%       8%       2%      --
+    map {($_,$h{$_})} sort keys %h           1589/s       --       0%    -28%    -28%    -32%    -33%
+    map +($_,$h{$_}), sort keys %h           1592/s        0%     --     -28%    -28%    -32%    -33%
+    %h{sort keys %h}                         2204/s       39%     38%     --       0%     -6%     -7%
+    S::HK::sort(%h) w/ qsort (threaded)      2199/s       38%     38%      0%     --      -6%     -7%
+    S::HK::sort(%h) w/ qsort_r (threaded)    2338/s       47%     47%      6%      6%     --	  -2%
+    S::HK::sort(%h) w/ qsort (non-threaded)  2375/s       49%     49%      8%      8%      2%     --
 
-49% faster on non-threaded Perl and up to 47% faster on threaded Perl.
+
+49% faster on non-threaded Perl and up to 47% faster on threaded Perl. Aristotle Pagaltzis L<suggested|https://github.com/athreef/Sort-HashKeys/pull/1> adding hash slices available since Perl v5.20.0 to the benchmark. This doesn't solve the unncessary hash lookup, but skipping the C<map> appears to have a much bigger impact on performance. The XS solution is only 8% faster than the pure Perl sort using hash slices.
 
 The Slowdown with C<qsort> on threaded build is because the interpreter state is fetched from thread local storage on every comparison. On GNU and FreeBSD libcs, this is avoided by using non-standard C<qsort_r>, which allows passing an extra parameter to the comparison function.
+
 
 =head1 METHODS AND ARGUMENTS
 
