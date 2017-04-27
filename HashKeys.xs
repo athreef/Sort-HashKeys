@@ -65,7 +65,7 @@ sort(...)
             XSRETURN_UNDEF;
         }
         if (items % 2 == 1) {
-            ST(items) = &PL_sv_undef;
+            XPUSHs(&PL_sv_undef);
             items++;
         }
 
